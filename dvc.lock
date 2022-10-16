@@ -1,0 +1,48 @@
+schema: '2.0'
+stages:
+  preprocess:
+    cmd: python3 src/data/make_dataset.py data/raw/train.csv data/processed/train.pkl
+      data/processed/target.pkl
+    deps:
+    - path: data/raw
+      md5: eeac2e94f36bc475f54a3ce68e762630.dir
+      size: 666024
+      nfiles: 3
+    outs:
+    - path: data/processed
+      md5: e98c02ea9553f25cc12cd9d9d46b0b0c.dir
+      size: 13083
+      nfiles: 2
+  build_features:
+    cmd: python3 src/features/build_features.py data/processed/train.pkl data/interim/train.pkl
+    deps:
+    - path: data/processed
+      md5: e98c02ea9553f25cc12cd9d9d46b0b0c.dir
+      size: 13083
+      nfiles: 2
+    outs:
+    - path: data/interim
+      md5: d1f5b8a533af0688977effc2c87d9a4a.dir
+      size: 11267
+      nfiles: 1
+  train:
+    cmd: python3 src/models/train_model.py data/interim/train.pkl data/processed/target.pkl
+      models/catboost data/val_idx
+    deps:
+    - path: data/interim
+      md5: d1f5b8a533af0688977effc2c87d9a4a.dir
+      size: 11267
+      nfiles: 1
+    - path: data/processed
+      md5: e98c02ea9553f25cc12cd9d9d46b0b0c.dir
+      size: 13083
+      nfiles: 2
+    outs:
+    - path: data/val_idx
+      md5: d751713988987e9331980363e24189ce.dir
+      size: 0
+      nfiles: 0
+    - path: models/catboost
+      md5: 23d5b8171198ee0b2c27721c26fa2a43.dir
+      size: 5532632
+      nfiles: 2
