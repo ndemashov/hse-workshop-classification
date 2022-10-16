@@ -4,6 +4,13 @@ import logging
 from pathlib import Path
 from dotenv import find_dotenv, load_dotenv
 from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegressionCV
+from sklearn.compose import ColumnTransformer
+from sklearn.multioutput import MultiOutputClassifier
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import PowerTransformer
 from src.utils import save_as_pickle
 import pandas as pd
 import catboost as cb
@@ -25,23 +32,62 @@ def main(input_data_filepath, input_target_filepath, output_model_filepath, outp
     train_data = pd.read_pickle(input_data_filepath)
     train_target = pd.read_pickle(input_target_filepath)
 
+
+    RANDOM_STATE = 77
+    N_SPLITS = 5
+    N_RANDOM_SEEDS = 7
+
     train_idx, val_idx = train_test_split(
-        train_data.index, test_size=0.2, random_state=42)
-
-
-    clf = cb.CatBoostClassifier(
-        loss_function='MultiLogloss',
-        iterations=1000,
-        silent=True,
-        depth=6,
-        l2_leaf_reg=2.0,
-        learning_rate=0.01,
-        early_stopping_rounds=100,
-        random_seed=77,
-        cat_features= cfg.CAT_COLS
+        train_data.index, 
+        test_size=0.2, 
+        random_state=RANDOM_STATE
     )
-    clf.fit(train_data.loc[train_idx], train_target.loc[train_idx])
-    clf.save_model(os.path.join(output_model_filepath, "catboost.cbm"))
+
+    
+
+    skf = StratifiedKFold(
+        n_splits= N_SPLITS, 
+        shuffle=True, 
+        random_state=RANDOM_STATE
+    )
+
+    lgr = LogisticRegressionCV(
+        Cs=50,
+        solver='lbfgs',
+        max_iter=5000,
+        random_state=RANDOM_STATE
+    )
+
+    real_pipe = Pipeline([
+        ('imputer', SimpleImputer()),
+        ('scaler', StandardScaler())
+    ])
+
+    cat_pipe = Pipeline([
+        ('imputer', SimpleImputer(strategy='constant', fill_value='NA')),
+        ('ohe', OneHotEncoder(handle_unknown='ignore', sparse=False))
+    ])
+
+    real_cols_pipe = make_pipeline(SimpleImputer(), StandardScaler(), PowerTransformer())
+    preprocess_pipe = ColumnTransformer(n_jobs=-1, transformers=[
+        ('real_cols', real_pipe, cfg.REAL_COLS),
+        ('cat_cols', cat_pipe, cfg.CAT_COLS),
+        ('ohe_cols', 'passthrough', cfg.OHE_COLS)
+    ])
+
+    model_one_target = Pipeline([
+        ('preprocess_original_features', preprocess_pipe),
+        ('model', lgr)
+    ])
+
+    logit = MultiOutputClassifier(model_one_target, n_jobs=-1)
+
+    for train_idx, test_idx in skf.split(train_data, train_target.sum(axis=1)):
+        X_train, X_test = train_data.iloc[train_idx], train_data.iloc[test_idx]
+        y_train, y_test = train_target.iloc[train_idx], train_target.iloc[test_idx]   
+        logit.fit(X_train, y_train)
+          
+    logit.save_model(os.path.join(output_model_filepath, "logreg.cbm"))
     pd.DataFrame({'indexes':val_idx.values}).to_csv(output_validx_filepath)
 
 if __name__ == '__main__':
