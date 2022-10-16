@@ -14,22 +14,22 @@ stages:
       - data/interim:
           persist: true
   train:
-    cmd: python3 src/models/train_model.py data/interim/train.pkl data/processed/target.pkl models/catboost data/val_idx
+    cmd: python3 src/models/train_model.py data/interim/train.pkl data/processed/target.pkl models/catboost data/val_index/validx.csv
     deps:
     - data/interim
     - data/processed
     outs:
     - models/catboost:
         persist: true
-    - data/val_idx:
+    - data/val_index:
         persist: true
   eval:
-    cmd: python3 src/models/evaluate.py data/interim/train.pkl data/processed/target.pkl models/catboost/catboost.cbm data/val_idx/validx.csv
+    cmd: python3 src/models/evaluate.py data/interim/train.pkl data/processed/target.pkl models/catboost/catboost.cbm data/val_index/validx.csv
     deps:
     - data/interim
     - data/processed
     - models/catboost
-    - data/val_idx
+    - data/val_index
     outs:
     - reports/figures:
         persist: true

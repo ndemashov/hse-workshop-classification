@@ -27,7 +27,7 @@ stages:
       nfiles: 1
   train:
     cmd: python3 src/models/train_model.py data/interim/train.pkl data/processed/target.pkl
-      models/catboost data/val_idx
+      models/catboost data/val_index/validx.csv
     deps:
     - path: data/interim
       md5: d1f5b8a533af0688977effc2c87d9a4a.dir
@@ -38,11 +38,36 @@ stages:
       size: 13083
       nfiles: 2
     outs:
-    - path: data/val_idx
-      md5: d751713988987e9331980363e24189ce.dir
-      size: 0
-      nfiles: 0
+    - path: data/val_index
+      md5: 5939b61d28a5d51a9f41f30e92c2cdff.dir
+      size: 252
+      nfiles: 1
     - path: models/catboost
-      md5: 23d5b8171198ee0b2c27721c26fa2a43.dir
+      md5: 67aeb3dbcc9ef9707f37f7e153d5282a.dir
       size: 5532632
+      nfiles: 2
+  eval:
+    cmd: python3 src/models/evaluate.py data/interim/train.pkl data/processed/target.pkl
+      models/catboost/catboost.cbm data/val_index/validx.csv
+    deps:
+    - path: data/interim
+      md5: d1f5b8a533af0688977effc2c87d9a4a.dir
+      size: 11267
+      nfiles: 1
+    - path: data/processed
+      md5: e98c02ea9553f25cc12cd9d9d46b0b0c.dir
+      size: 13083
+      nfiles: 2
+    - path: data/val_index
+      md5: 5939b61d28a5d51a9f41f30e92c2cdff.dir
+      size: 252
+      nfiles: 1
+    - path: models/catboost
+      md5: 67aeb3dbcc9ef9707f37f7e153d5282a.dir
+      size: 5532632
+      nfiles: 2
+    outs:
+    - path: reports/figures
+      md5: 366d2d6d8769079017db3ae8a69ca372.dir
+      size: 231
       nfiles: 2

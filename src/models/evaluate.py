@@ -11,7 +11,6 @@ import src.config as cfg
 
 import click
 import pandas as pd
-from src.utils import save_as_pickle
 
 from catboost import CatBoostClassifier
 
@@ -33,7 +32,7 @@ def main(input_data_filepath, input_target_filepath, input_model_filepath, input
     train_data = pd.read_pickle(input_data_filepath)
     train_target = pd.read_pickle(input_target_filepath)
 
-    val_indxes = pd.read_pickle(input_validx_filepath)['indexes'].values
+    val_indxes = pd.read_csv(input_validx_filepath)['indexes'].values
     
     val_data = train_data.loc[val_indxes]
     val_target = train_target.loc[val_indxes]
@@ -45,7 +44,6 @@ def main(input_data_filepath, input_target_filepath, input_model_filepath, input
     y_pred = trained_model.predict(val_data)
 
     precision_per_class = precision_score(val_target, y_pred, average=None).tolist()
-    precision_weighted = precision_score(val_target,y_pred, average='weighted')
 
     recall_per_class = recall_score(val_target, y_pred, average=None).tolist()
     recall_weighted = recall_score(val_target, y_pred, average='weighted')
