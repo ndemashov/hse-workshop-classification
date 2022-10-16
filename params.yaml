@@ -1,0 +1,4 @@
+preprocess:
+  input_data: data/raw/sample_solution.csv
+  output_data: data/interim
+  output_train: data/interim
